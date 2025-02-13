@@ -2,20 +2,20 @@ from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
 from django.db import models
 
 class Funcionario(models.Model):
-    tx_nome = models.CharField(
+    nome = models.CharField(
         db_column='tx_nome',
         max_length=64,
         null=False,
         verbose_name="Nome"
     )
-    tx_matricula = models.CharField(
+    matricula = models.CharField(
         db_column='tx_matricula',
         max_length=6,
         null=False,
         unique=True,
         verbose_name="Matrícula"
     )
-    tx_cargo = models.CharField(
+    cargo = models.CharField(
         db_column='tx_cargo',
         max_length=64,
         null=False,
@@ -23,7 +23,7 @@ class Funcionario(models.Model):
     )
 
     def __str__(self):
-        return self.tx_nome
+        return self.nome
 
     class Meta:
         db_table = 'funcionario'
@@ -32,7 +32,7 @@ class Funcionario(models.Model):
 
 
 class Camera(models.Model):
-    id_funcionario = models.ForeignKey(
+    funcionario = models.ForeignKey(
         Funcionario,
         on_delete=models.SET_NULL,
         null=True,
@@ -41,7 +41,7 @@ class Camera(models.Model):
         db_column='id_funcionario',
         verbose_name="Funcionário"
     )
-    tx_identificador = models.CharField(
+    identificador = models.CharField(
         db_column='tx_identificador',
         max_length=64,
         null=False,
@@ -49,7 +49,7 @@ class Camera(models.Model):
     )
 
     def __str__(self):
-        return f"Câmera {self.tx_identificador} - {self.id_funcionario.tx_nome if self.id_funcionario else 'Sem funcionário'}"
+        return f"Câmera {self.identificador} - {self.funcionario.nome if self.funcionario else 'Sem funcionário'}"
 
     class Meta:
         db_table = 'camera'
@@ -59,13 +59,13 @@ class Camera(models.Model):
 
 class RegistroPostura(models.Model):
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE)
-    dt_inicio = models.DateTimeField(
+    inicio = models.DateTimeField(
         db_column='dt_inicio',
         null=True,
         blank=True,
         verbose_name="Início da má postura"
     )
-    dt_fim = models.DateTimeField(
+    fim = models.DateTimeField(
         db_column='dt_fim',
         null=True,
         blank=True,
@@ -78,12 +78,12 @@ class RegistroPostura(models.Model):
     )
 
     def save(self, *args, **kwargs):
-        if self.dt_fim and self.dt_inicio:
-            self.duracao = (self.dt_fim - self.dt_inicio).total_seconds()
+        if self.fim and self.inicio:
+            self.duracao = (self.fim - self.inicio).total_seconds()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.funcionario.tx_nome} - {self.duracao} segundos"
+        return f"{self.funcionario.nome} - {self.duracao} segundos"
 
     class Meta:
         db_table = 'registro_postura'
@@ -92,24 +92,24 @@ class RegistroPostura(models.Model):
 
 
 class UsuarioAdministrador(BaseUserManager):
-    def create_user(self, tx_matricula, password=None, id_funcionario=None):
-        if not tx_matricula:
+    def create_user(self, matricula, password=None, funcionario=None):
+        if not matricula:
             raise ValueError("Matrícula inválida")
 
-        user = self.model(tx_matricula=tx_matricula, id_funcionario=id_funcionario)
+        user = self.model(matricula=matricula, funcionario=funcionario)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, tx_matricula, password=None, id_funcionario=None):
-        user = self.create_user(tx_matricula, password, id_funcionario)
+    def create_superuser(self, matricula, password=None, funcionario=None):
+        user = self.create_user(matricula, password, funcionario)
         user.is_superuser = True
         user.is_staff = True
         user.save(using=self._db)
         return user
 
 class Usuario(AbstractBaseUser):
-    id_funcionario = models.OneToOneField(
+    funcionario = models.OneToOneField(
         Funcionario,
         on_delete=models.CASCADE,
         related_name='usuario',
@@ -118,20 +118,20 @@ class Usuario(AbstractBaseUser):
         null=True,
         blank=True,
     )
-    tx_matricula = models.CharField(
+    matricula = models.CharField(
         db_column='tx_matricula',
         max_length=6,
         null=False,
         unique=True,
         verbose_name="Matrícula"
     )
-    tx_senha = models.CharField(
+    senha = models.CharField(
         db_column='tx_senha',
         max_length=64,
         null=False,
         verbose_name="Senha"
     )
-    cs_ativo = models.BooleanField(
+    ativo = models.BooleanField(
         db_column='cs_ativo',
         default=True,
         verbose_name="Ativo"
@@ -147,16 +147,22 @@ class Usuario(AbstractBaseUser):
         verbose_name="Equipe"
     )
 
+    def has_perm(self, perm, obj=None):
+        return self.is_superuser
+
+    def has_module_perms(self, app_label):
+        return self.is_superuser
+
     objects = UsuarioAdministrador()
 
-    USERNAME_FIELD = 'tx_matricula'
+    USERNAME_FIELD = 'matricula'
 
     def __str__(self):
-        return self.tx_matricula
+        return self.matricula
 
     def save(self, *args, **kwargs):
-        if self.id_funcionario:
-            self.tx_matricula = self.id_funcionario.tx_matricula
+        if self.funcionario:
+            self.matricula = self.funcionario.matricula
         super().save(*args, **kwargs)
 
     class Meta:
