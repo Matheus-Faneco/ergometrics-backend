@@ -4,27 +4,47 @@ from core.models import Funcionario, Camera, RegistroPostura, Usuario
 class ModelAdminBase(admin.ModelAdmin):
     list_per_page = 20
 
+
 @admin.register(Funcionario)
 class FuncionarioAdmin(ModelAdminBase):
-    list_display = ("nome", "matricula", "cargo")
-    search_fields = ("nome", "matricula")
-    list_filter = ("cargo",)
+    list_display = (
+        'id',
+        'nome',
+        'matricula',
+        'cargo',
+        'created_at',
+    )
+
 
 @admin.register(Camera)
 class CameraAdmin(ModelAdminBase):
-    list_display = ("identificador", "funcionario")
-    search_fields = ("identificador",)
-    list_filter = ("funcionario",)
+    list_display = (
+        'id',
+        'identificador',
+        'funcionario',
+        'created_at',
+    )
+
 
 @admin.register(RegistroPostura)
 class RegistroPosturaAdmin(ModelAdminBase):
-    list_display = ("funcionario", "inicio", "fim", "duracao")
-    search_fields = ("funcionario__nome",)
-    list_filter = ("inicio", "fim")
+    list_display = (
+        'id',
+        'funcionario',
+        'inicio',
+        'fim',
+        'duracao',
+    )
+
 
 @admin.register(Usuario)
 class UsuarioAdmin(ModelAdminBase):
     list_display = (
-        "matricula", "funcionario", "ativo", "is_superuser", "is_staff")
-    search_fields = ("matricula", "funcionario__nome")
-    list_filter = ("ativo", "is_superuser", "is_staff")
+        'id',
+        'matricula',
+        'funcionario',
+        'is_active',
+        'is_superuser',
+        'is_staff',
+        'last_login',
+    )

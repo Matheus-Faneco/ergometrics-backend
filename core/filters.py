@@ -1,5 +1,5 @@
 import django_filters
-from .models import Funcionario
+from .models import Funcionario, Camera, RegistroPostura, Usuario
 
 class FuncionarioFilter(django_filters.FilterSet):
     nome = django_filters.CharFilter(lookup_expr='icontains')
@@ -9,3 +9,4 @@ class FuncionarioFilter(django_filters.FilterSet):
     class Meta:
         model = Funcionario
         fields = ['nome', 'matricula', 'cargo']
+
