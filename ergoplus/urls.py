@@ -5,7 +5,7 @@ from django.shortcuts import redirect
 
 from rest_framework.routers import DefaultRouter
 
-from core.views import LoginView, UsuarioView
+from core.views import LoginView, UsuarioView, LogoutView
 
 router = DefaultRouter()
 router.register(r'funcionarios', viewsets.FuncionarioViewSet)
@@ -16,6 +16,7 @@ urlpatterns = [
     path('', lambda request: redirect('admin/', permanent=False)),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('login', LoginView.as_view(), name='login'),
-    path('usuario-auth', UsuarioView.as_view())
+    path('login', LoginView.as_view()),
+    path('usuario-auth', UsuarioView.as_view()),
+    path('logout', LogoutView.as_view()),
 ]

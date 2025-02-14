@@ -50,7 +50,7 @@ class UsuarioView(APIView):
             raise AuthenticationFailed("Sem autenticação")
 
         try:
-            payload = jwt.decode(token, 'secret', algorithm=['HS256'])
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except:
             raise AuthenticationFailed("Sem autenticação")
 
@@ -60,3 +60,11 @@ class UsuarioView(APIView):
         return Response(serializer.data)
 
 
+class LogoutView(APIView):
+    def post(self, request):
+        response = Response()
+        response.delete_cookie(key='jwt')
+        response.data = {
+            'message': 'Logout com sucesso'
+        }
+        return response
