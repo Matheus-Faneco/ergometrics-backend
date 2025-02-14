@@ -1,6 +1,6 @@
-# Create your models here.
+from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin
 from django.db import models
-from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.utils import timezone
 
 class Funcionario(models.Model):
@@ -39,67 +39,6 @@ class Funcionario(models.Model):
         ordering = ['nome']
 
 
-class Usuario(AbstractUser, PermissionsMixin):
-    funcionario = models.OneToOneField(
-        Funcionario,
-        on_delete=models.CASCADE,
-        related_name='usuario',
-        db_column='id_funcionario',
-        verbose_name="Funcionário",
-        null=True,
-        blank=True,
-    )
-    matricula = models.CharField(
-        db_column='tx_matricula',
-        max_length=6,
-        null=False,
-        unique=True,
-        verbose_name="Matrícula"
-    )
-    password = models.CharField(
-        db_column='tx_password',
-        max_length=128,
-        verbose_name="Senha"
-    )
-    last_login = models.DateTimeField(
-        db_column='dt_last_login',
-        null=True,
-        verbose_name="Último login"
-    )
-    is_active = models.BooleanField(
-        db_column='cs_ativo',
-        default=True,
-        verbose_name="Ativo"
-    )
-    is_superuser = models.BooleanField(
-        db_column='cs_superuser',
-        default=False,
-        verbose_name="Superusuário"
-    )
-    is_staff = models.BooleanField(
-        db_column='cs_staff',
-        default=False,
-        verbose_name="Equipe"
-    )
-    username = models.CharField(
-        max_length=150,
-        default='',  # or any other default value
-        unique=True,
-        verbose_name="Username"
-    )
-
-    USERNAME_FIELD = 'matricula'
-    REQUIRED_FIELDS = []
-
-    def __str__(self):
-        return self.matricula
-
-    class Meta:
-        db_table = 'usuario'
-        verbose_name = 'Usuário'
-        verbose_name_plural = 'Usuários'
-
-
 class Camera(models.Model):
     funcionario = models.ForeignKey(
         Funcionario,
@@ -116,14 +55,9 @@ class Camera(models.Model):
         null=False,
         verbose_name="Identificador"
     )
-    created_at = models.DateTimeField(
-        db_column='dt_created',
-        default=timezone.now,
-        verbose_name="Data de criação"
-    )
 
     def __str__(self):
-        return f"Câmera {self.identificador}"
+        return f"Câmera {self.identificador} - {self.funcionario.nome if self.funcionario else 'Sem funcionário'}"
 
     class Meta:
         db_table = 'camera'
@@ -140,7 +74,8 @@ class RegistroPostura(models.Model):
     )
     inicio = models.DateTimeField(
         db_column='dt_inicio',
-        auto_now_add=True,
+        null=True,
+        blank=True,
         verbose_name="Início da má postura"
     )
     fim = models.DateTimeField(
@@ -161,10 +96,90 @@ class RegistroPostura(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.funcionario.nome} - {self.duracao}s"
+        return f"{self.funcionario.nome} - {self.duracao} segundos"
 
     class Meta:
         db_table = 'registro_postura'
         verbose_name = 'Registro de Postura'
         verbose_name_plural = 'Registros de Postura'
         ordering = ['-inicio']
+
+
+class UsuarioAdministrador(BaseUserManager):
+    def create_user(self, matricula, password=None, funcionario=None):
+        if not matricula:
+            raise ValueError("Matrícula inválida")
+
+        user = self.model(matricula=matricula, funcionario=funcionario)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, matricula, password=None, funcionario=None):
+        user = self.create_user(matricula, password, funcionario)
+        user.is_superuser = True
+        user.is_staff = True
+        user.save(using=self._db)
+        return user
+
+class Usuario(AbstractBaseUser, PermissionsMixin):
+    funcionario = models.OneToOneField(
+        Funcionario,
+        on_delete=models.CASCADE,
+        related_name='usuario',
+        db_column='id_funcionario',
+        verbose_name="Funcionário",
+        null=True,
+        blank=True,
+    )
+    matricula = models.CharField(
+        db_column='tx_matricula',
+        max_length=6,
+        null=False,
+        unique=True,
+        verbose_name="Matrícula"
+    )
+    senha = models.CharField(
+        db_column='tx_senha',
+        max_length=64,
+        null=False,
+        verbose_name="Senha"
+    )
+    ativo = models.BooleanField(
+        db_column='cs_ativo',
+        default=True,
+        verbose_name="Ativo"
+    )
+    is_superuser = models.BooleanField(
+        db_column='is_superuser',
+        default=False,
+        verbose_name="Superusuário"
+    )
+    is_staff = models.BooleanField(
+        db_column='is_staff',
+        default=False,
+        verbose_name="Equipe"
+    )
+
+    def has_perm(self, perm, obj=None):
+        return self.is_superuser
+
+    def has_module_perms(self, app_label):
+        return self.is_superuser
+
+    objects = UsuarioAdministrador()
+
+    USERNAME_FIELD = 'matricula'
+
+    def __str__(self):
+        return self.matricula
+
+    def save(self, *args, **kwargs):
+        if self.funcionario:
+            self.matricula = self.funcionario.matricula
+        super().save(*args, **kwargs)
+
+    class Meta:
+        db_table = 'usuario'
+        verbose_name = 'Usuário'
+        verbose_name_plural = 'Usuários'
