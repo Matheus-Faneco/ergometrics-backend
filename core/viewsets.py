@@ -1,5 +1,5 @@
-from rest_framework import viewsets
-
+from rest_framework import viewsets, status
+from rest_framework.response import Response
 from .filters import FuncionarioFilter
 from .models import Funcionario, Camera, RegistroPostura, Usuario
 from .serializers import FuncionarioSerializer, CameraSerializer, RegistroPosturaSerializer, UsuarioSerializer
@@ -11,6 +11,16 @@ class FuncionarioViewSet(viewsets.ModelViewSet):
     filterset_class = FuncionarioFilter
     ordering_fields = '__all__'
     ordering = '-id'
+
+    def update(self, request, *args, **kwargs):
+        # Incrementa o contador de alertas
+        funcionario = self.get_object()
+        funcionario.total_alertas += 1
+        funcionario.save()
+
+        # Retorna o funcionário atualizado
+        serializer = self.get_serializer(funcionario)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class CameraViewSet(viewsets.ModelViewSet):
     queryset = Camera.objects.all()

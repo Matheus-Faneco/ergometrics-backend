@@ -6,11 +6,6 @@ from .serializers import UsuarioSerializer
 from .models import Usuario
 import jwt, datetime
 
-# Create your views here.
-
-
-
-
 class LoginView(APIView):
     def post(self, request):
         matricula = request.data['matricula']

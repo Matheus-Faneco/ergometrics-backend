@@ -23,6 +23,11 @@ class Funcionario(models.Model):
         null=False,
         verbose_name="Cargo"
     )
+    total_alertas = models.IntegerField(
+        db_column='nr_total_alertas',
+        default=0,
+        verbose_name="Total de Alertas"
+    )
     created_at = models.DateTimeField(
         db_column='dt_created',
         default=timezone.now,
