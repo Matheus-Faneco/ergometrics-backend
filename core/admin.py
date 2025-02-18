@@ -1,5 +1,5 @@
 from django.contrib import admin
-from core.models import Funcionario, Camera, RegistroPostura, Usuario
+from core.models import Funcionario, Camera, Usuario
 
 class ModelAdminBase(admin.ModelAdmin):
     list_per_page = 20
@@ -16,11 +16,6 @@ class CameraAdmin(ModelAdminBase):
     search_fields = ("identificador",)
     list_filter = ("funcionario",)
 
-@admin.register(RegistroPostura)
-class RegistroPosturaAdmin(ModelAdminBase):
-    list_display = ("funcionario", "inicio", "fim", "duracao")
-    search_fields = ("funcionario__nome",)
-    list_filter = ("inicio", "fim")
 
 @admin.register(Usuario)
 class UsuarioAdmin(ModelAdminBase):

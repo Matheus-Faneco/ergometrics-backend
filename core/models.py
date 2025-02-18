@@ -3,6 +3,7 @@ from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.utils import timezone
 
+
 class Funcionario(models.Model):
     nome = models.CharField(
         db_column='tx_nome',
@@ -23,16 +24,45 @@ class Funcionario(models.Model):
         null=False,
         verbose_name="Cargo"
     )
+    observacoes = models.CharField(
+        db_column='tx_observacoes',
+        max_length=256,
+        null=True,
+        blank = True,
+        verbose_name="Observações"
+    )
     total_alertas = models.IntegerField(
         db_column='nr_total_alertas',
         default=0,
         verbose_name="Total de Alertas"
+    )
+    duracao_segundos = models.IntegerField(
+        db_column='nr_duracao_segundos',
+        default=0,
+        verbose_name="Duração em Segundos"
     )
     created_at = models.DateTimeField(
         db_column='dt_created',
         default=timezone.now,
         verbose_name="Data de criação"
     )
+
+    def adicionar_alerta(self):
+        self.total_alertas += 1
+        self.save()
+
+    #retornos de observacoes do funcionario
+    def definir_observacoes(self):
+        if self.duracao_segundos < 7200:
+            return "Desempenho postural excelente."
+        elif self.duracao_segundos < 14400:
+            return "Desempenho postural aceitável."
+        return "Alerta! Tempo excessivo em má postura."
+
+    #salvando o return em observacoes
+    def save(self, *args, **kwargs):
+        self.observacoes = self.definir_observacoes()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nome
@@ -70,62 +100,61 @@ class Camera(models.Model):
         verbose_name_plural = 'Câmeras'
 
 
-class RegistroPostura(models.Model):
-    funcionario = models.ForeignKey(
-        Funcionario,
-        on_delete=models.CASCADE,
-        db_column='id_funcionario',
-        verbose_name='Funcionário'
-    )
-    inicio = models.DateTimeField(
-        db_column='dt_inicio',
-        null=True,
-        blank=True,
-        verbose_name="Início da má postura"
-    )
-    fim = models.DateTimeField(
-        db_column='dt_fim',
-        null=True,
-        blank=True,
-        verbose_name="Fim da má postura"
-    )
-    duracao = models.IntegerField(
-        db_column='nr_duracao',
+class RelatorioGeral(models.Model):
+    total_alertas = models.IntegerField(
+        db_column='nr_total_alertas',
         default=0,
-        verbose_name="Duração (segundos)"
+        verbose_name="Total de Alertas"
     )
-
-    def save(self, *args, **kwargs):
-        if self.fim and self.inicio:
-            self.duracao = (self.fim - self.inicio).total_seconds()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.funcionario.nome} - {self.duracao} segundos"
+    media_alerta_por_funcionario = models.DecimalField(
+        db_column='nr_media_alerta_por_funcionario',
+        default=0.0,
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Média de alerta por funcionário"
+    )
+    porcentagem_funcionario = models.DecimalField(
+        db_column='nr_porcentagem_funcionario',
+        default=0.0,
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Porcentagem de alerta por funcionário"
+    )
 
     class Meta:
-        db_table = 'registro_postura'
-        verbose_name = 'Registro de Postura'
-        verbose_name_plural = 'Registros de Postura'
-        ordering = ['-inicio']
+        db_table = 'relatorio_geral'
+        verbose_name = 'Relatório Geral'
+        verbose_name_plural = 'Relatórios Gerais'
 
 
 class UsuarioAdministrador(BaseUserManager):
-    def create_user(self, matricula, password=None, funcionario=None):
-        if not matricula:
-            raise ValueError("Matrícula inválida")
+    def create_user(self, password=None, **kwargs):
+        funcionario = kwargs.pop('funcionario', None)
 
-        user = self.model(matricula=matricula, funcionario=funcionario)
+        if funcionario:
+            matricula = funcionario.matricula
+        else:
+            matricula = kwargs.get('matricula')
+            if not matricula:
+                raise ValueError("Debe proveer matrícula o un funcionario válido")
+
+        if 'matricula' in kwargs:
+            kwargs.pop('matricula')
+
+        user = self.model(
+            matricula=matricula,
+            funcionario=funcionario,
+            **kwargs
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, matricula, password=None, funcionario=None):
-        user = self.create_user(matricula, password, funcionario)
-        user.is_superuser = True
-        user.is_staff = True
-        user.save(using=self._db)
-        return user
+    def create_superuser(self, password=None, **kwargs):
+        kwargs.setdefault('is_staff', True)
+        kwargs.setdefault('is_superuser', True)
+        return self.create_user(password=password, **kwargs)
+
 
 class Usuario(AbstractBaseUser, PermissionsMixin):
     funcionario = models.OneToOneField(
@@ -144,12 +173,6 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         unique=True,
         verbose_name="Matrícula"
     )
-    senha = models.CharField(
-        db_column='tx_senha',
-        max_length=64,
-        null=False,
-        verbose_name="Senha"
-    )
     ativo = models.BooleanField(
         db_column='cs_ativo',
         default=True,
@@ -165,12 +188,6 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         default=False,
         verbose_name="Equipe"
     )
-
-    def has_perm(self, perm, obj=None):
-        return self.is_superuser
-
-    def has_module_perms(self, app_label):
-        return self.is_superuser
 
     objects = UsuarioAdministrador()
 

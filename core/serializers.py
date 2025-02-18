@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Funcionario, Camera, RegistroPostura, Usuario
+from .models import Funcionario, Camera, Usuario
 
 
 class FuncionarioSerializer(serializers.ModelSerializer):
@@ -10,11 +10,6 @@ class FuncionarioSerializer(serializers.ModelSerializer):
 class CameraSerializer(serializers.ModelSerializer):
     class Meta:
         model = Camera
-        fields = '__all__'
-
-class RegistroPosturaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RegistroPostura
         fields = '__all__'
 
 class UsuarioSerializer(serializers.ModelSerializer):

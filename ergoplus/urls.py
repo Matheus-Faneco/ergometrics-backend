@@ -10,7 +10,6 @@ from core.views import LoginView, UsuarioView, LogoutView
 router = DefaultRouter()
 router.register(r'funcionarios', viewsets.FuncionarioViewSet)
 router.register(r'camera', viewsets.CameraViewSet)
-router.register(r'registro-postura', viewsets.RegistroPosturaViewSet)
 router.register(r'usuario', viewsets.UsuarioViewSet)
 
 #Maior parte das urls embaixo são devido a autenticação JWT

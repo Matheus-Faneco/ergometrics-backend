@@ -1,5 +1,5 @@
 import django_filters
-from .models import Funcionario, Camera, RegistroPostura, Usuario
+from .models import Funcionario
 
 class FuncionarioFilter(django_filters.FilterSet):
     nome = django_filters.CharFilter(lookup_expr='icontains')
