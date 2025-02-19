@@ -11,6 +11,7 @@ router = DefaultRouter()
 router.register(r'funcionarios', viewsets.FuncionarioViewSet)
 router.register(r'camera', viewsets.CameraViewSet)
 router.register(r'usuario', viewsets.UsuarioViewSet)
+router.register(r'relatorio-geral', viewsets.RelatorioGeralViewSet)
 
 #Maior parte das urls embaixo são devido a autenticação JWT
 urlpatterns = [

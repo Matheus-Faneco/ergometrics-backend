@@ -136,7 +136,7 @@ class UsuarioAdministrador(BaseUserManager):
         else:
             matricula = kwargs.get('matricula')
             if not matricula:
-                raise ValueError("Debe proveer matrícula o un funcionario válido")
+                raise ValueError("Deve proveer matrícula o un funcionario válido")
 
         if 'matricula' in kwargs:
             kwargs.pop('matricula')
