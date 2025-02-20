@@ -3,7 +3,7 @@ from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.db.models.aggregates import Sum
 from django.utils import timezone
-
+from django.db.models import Avg
 
 class Funcionario(models.Model):
     nome = models.CharField(
@@ -29,7 +29,7 @@ class Funcionario(models.Model):
         db_column='tx_observacoes',
         max_length=256,
         null=True,
-        blank = True,
+        blank=True,
         verbose_name="Observações"
     )
     total_alertas = models.IntegerField(
@@ -49,22 +49,24 @@ class Funcionario(models.Model):
     )
 
     def adicionar_alerta(self):
+        """Adiciona um alerta ao funcionário e atualiza o relatório geral"""
         self.total_alertas += 1
-        self.save()
+        self.save(update_fields=['total_alertas'])
+
+        # Atualiza o Relatório Geral automaticamente
         RelatorioGeral.atualizar_relatorio()
 
-    #retornos de observacoes do funcionario
+    def save(self, *args, **kwargs):
+        """Salva as observações baseadas na duração em segundos"""
+        self.observacoes = self.definir_observacoes()
+        super().save(*args, **kwargs)
+
     def definir_observacoes(self):
         if self.duracao_segundos < 7200:
             return "Desempenho postural excelente."
         elif self.duracao_segundos < 14400:
             return "Desempenho postural aceitável."
         return "Alerta! Tempo excessivo em má postura."
-
-    #salvando o return em observacoes
-    def save(self, *args, **kwargs):
-        self.observacoes = self.definir_observacoes()
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nome
@@ -119,13 +121,17 @@ class RelatorioGeral(models.Model):
 
     @classmethod
     def atualizar_relatorio(cls):
+        """Recalcula os valores do Relatório Geral sempre que necessário"""
         total_alertas = Funcionario.objects.aggregate(Sum('total_alertas'))['total_alertas__sum'] or 0
         total_funcionarios = Funcionario.objects.count()
-        media_alertas = total_alertas / total_funcionarios if total_funcionarios > 0 else 0
 
-        relatorio, created = cls.objects.get_or_create(id=1)
+        media_alertas = total_alertas / total_funcionarios if total_funcionarios > 0 else 0
+        porcentagem_alertas = (total_alertas / (total_funcionarios * 100)) * 100 if total_funcionarios > 0 else 0
+
+        relatorio, _ = cls.objects.get_or_create(id=1)
         relatorio.total_alertas = total_alertas
         relatorio.media_alerta_por_funcionario = media_alertas
+        relatorio.porcentagem_funcionario = porcentagem_alertas
         relatorio.save()
 
     class Meta:
