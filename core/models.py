@@ -112,12 +112,12 @@ class RelatorioGeral(models.Model):
         decimal_places=2,
         verbose_name="Média de alerta por funcionário"
     )
-    porcentagem_funcionario = models.DecimalField(
-        db_column='nr_porcentagem_funcionario',
+    indice_alertas = models.DecimalField(
+        db_column='nr_indice_alertas',
         default=0.0,
-        max_digits=5,
+        max_digits=6,
         decimal_places=2,
-        verbose_name="Porcentagem de alerta por funcionário"
+        verbose_name="Índice de Alertas"
     )
 
     class Meta:

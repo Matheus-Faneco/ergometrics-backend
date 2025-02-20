@@ -29,11 +29,11 @@ class RelatorioGeralViewSet(viewsets.ModelViewSet):
 
         media_alerta_por_funcionario = total_alertas_funcionarios / total_funcionarios
 
-        porcentagem_funcionario = (media_alerta_por_funcionario / total_alertas_funcionarios * 100)
+        indice_alertas = (total_alertas_funcionarios / total_funcionarios)
 
         relatorio, created = RelatorioGeral.objects.get_or_create(id=1)
         relatorio.total_alertas = total_alertas_funcionarios
-        relatorio.porcentagem_funcionario = porcentagem_funcionario
+        relatorio.indice_alertas = indice_alertas
         relatorio.media_alerta_por_funcionario = media_alerta_por_funcionario
         relatorio.save()
 
@@ -41,8 +41,10 @@ class RelatorioGeralViewSet(viewsets.ModelViewSet):
         return Response({
             'total_alertas': relatorio.total_alertas,
             'media_alerta_por_funcionario': relatorio.media_alerta_por_funcionario,
-            'porcentagem_funcionario': relatorio.porcentagem_funcionario
+            'indice_alertas': relatorio.porcentagem_funcionario
         })
+
+
 class CameraViewSet(viewsets.ModelViewSet):
     queryset = Camera.objects.all()
     serializer_class = CameraSerializer
