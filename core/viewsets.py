@@ -26,14 +26,15 @@ class RelatorioGeralViewSet(viewsets.ModelViewSet):
         total_funcionarios = Funcionario.objects.all().count()
 
         total_alertas_funcionarios = Funcionario.objects.all().aggregate(Sum('total_alertas'))['total_alertas__sum'] or 0
+        total_duracao_segundos = Funcionario.objects.aggregate(Sum('duracao_segundos'))['duracao_segundos__sum']
+
 
         media_alerta_por_funcionario = total_alertas_funcionarios / total_funcionarios
-
-        indice_alertas = (total_alertas_funcionarios / total_funcionarios)
+        media_segundos_por_funcionario = total_duracao_segundos / total_funcionarios
 
         relatorio, created = RelatorioGeral.objects.get_or_create(id=1)
         relatorio.total_alertas = total_alertas_funcionarios
-        relatorio.indice_alertas = indice_alertas
+        relatorio.media_segundos_por_funcionario = media_segundos_por_funcionario
         relatorio.media_alerta_por_funcionario = media_alerta_por_funcionario
         relatorio.save()
 
@@ -41,7 +42,7 @@ class RelatorioGeralViewSet(viewsets.ModelViewSet):
         return Response({
             'total_alertas': relatorio.total_alertas,
             'media_alerta_por_funcionario': relatorio.media_alerta_por_funcionario,
-            'indice_alertas': relatorio.porcentagem_funcionario
+            'media_segundos': relatorio.media_segundos_por_funcionario
         })
 
 

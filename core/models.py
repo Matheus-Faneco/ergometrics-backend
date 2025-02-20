@@ -100,10 +100,10 @@ class Camera(models.Model):
 
 #---------------------RELATÓRIO GERAL------------------------------
 class RelatorioGeral(models.Model):
-    total_alertas = models.IntegerField(
-        db_column='nr_total_alertas',
+    total_alertas_geral = models.IntegerField(
+        db_column='nr_total_alertas_geral',
         default=0,
-        verbose_name="Total de Alertas"
+        verbose_name="Total de Alertas Geral"
     )
     media_alerta_por_funcionario = models.DecimalField(
         db_column='nr_media_alerta_por_funcionario',
@@ -112,12 +112,12 @@ class RelatorioGeral(models.Model):
         decimal_places=2,
         verbose_name="Média de alerta por funcionário"
     )
-    indice_alertas = models.DecimalField(
-        db_column='nr_indice_alertas',
+    media_segundos_por_funcionario = models.DecimalField(
+        db_column='nr_media_segundos_por_funcionario',
         default=0.0,
-        max_digits=6,
+        max_digits=10,
         decimal_places=2,
-        verbose_name="Índice de Alertas"
+        verbose_name="Média de segundos por funcionário"
     )
 
     class Meta:
