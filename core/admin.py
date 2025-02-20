@@ -12,8 +12,7 @@ class FuncionarioAdmin(ModelAdminBase):
 
 @admin.register(Camera)
 class CameraAdmin(ModelAdminBase):
-    list_display = ("identificador", "funcionario")
-    search_fields = ("identificador",)
+    list_display = ("funcionario",)
     list_filter = ("funcionario",)
 
 

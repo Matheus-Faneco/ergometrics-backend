@@ -1,6 +1,7 @@
 from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
+from django.db.models.aggregates import Sum
 from django.utils import timezone
 
 
@@ -50,6 +51,7 @@ class Funcionario(models.Model):
     def adicionar_alerta(self):
         self.total_alertas += 1
         self.save()
+        RelatorioGeral.atualizar_relatorio()
 
     #retornos de observacoes do funcionario
     def definir_observacoes(self):
@@ -84,15 +86,9 @@ class Camera(models.Model):
         db_column='id_funcionario',
         verbose_name="Funcionário"
     )
-    identificador = models.CharField(
-        db_column='tx_identificador',
-        max_length=64,
-        null=False,
-        verbose_name="Identificador"
-    )
 
     def __str__(self):
-        return f"Câmera {self.identificador} - {self.funcionario.nome if self.funcionario else 'Sem funcionário'}"
+        return f"Câmera {self.funcionario.nome if self.funcionario else 'Sem funcionário'}"
 
     class Meta:
         db_table = 'camera'
@@ -120,6 +116,17 @@ class RelatorioGeral(models.Model):
         decimal_places=2,
         verbose_name="Porcentagem de alerta por funcionário"
     )
+
+    @classmethod
+    def atualizar_relatorio(cls):
+        total_alertas = Funcionario.objects.aggregate(Sum('total_alertas'))['total_alertas__sum'] or 0
+        total_funcionarios = Funcionario.objects.count()
+        media_alertas = total_alertas / total_funcionarios if total_funcionarios > 0 else 0
+
+        relatorio, created = cls.objects.get_or_create(id=1)
+        relatorio.total_alertas = total_alertas
+        relatorio.media_alerta_por_funcionario = media_alertas
+        relatorio.save()
 
     class Meta:
         db_table = 'relatorio_geral'

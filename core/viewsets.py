@@ -1,3 +1,4 @@
+from rest_framework.decorators import action
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .filters import FuncionarioFilter
@@ -34,6 +35,30 @@ class CameraViewSet(viewsets.ModelViewSet):
     serializer_class = CameraSerializer
     ordering_fields = '__all__'
     ordering = '-id'
+
+    @action(detail=False, methods=['post'], url_path='atribuir-funcionario')
+    def atribuir_funcionario(self, request):
+        print("requisiçao recebida")
+        matricula = request.data.get('matricula')
+        print(f"requisiçao recebida: {matricula}")
+
+
+        try:
+            funcionario = Funcionario.objects.get(matricula=matricula)
+        except Funcionario.DoesNotExist:
+            return Response(
+                {"detail": "Funcionário não foi encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        camera = self.get_queryset().first()
+        if not camera:
+            camera = Camera.objects.create()
+
+        camera.funcionario = funcionario
+        camera.save()
+
+        return Response({"detail": "Funcionário atribuído"}, status=status.HTTP_200_OK)
 
 
 class UsuarioViewSet(viewsets.ModelViewSet):
