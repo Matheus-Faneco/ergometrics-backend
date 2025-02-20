@@ -1,3 +1,4 @@
+from django.db.models.aggregates import Sum
 from rest_framework.decorators import action
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -13,18 +14,6 @@ class FuncionarioViewSet(viewsets.ModelViewSet):
     ordering_fields = '__all__'
     ordering = '-id'
 
-    def update(self, request, *args, **kwargs):
-        funcionario = self.get_object()
-        funcionario.total_alertas += 1
-        funcionario.save()
-
-        # Atualiza o relatório geral sempre que um alerta for incrementado
-        relatorio_viewset = RelatorioGeralViewSet()
-        relatorio_viewset.atualizar_relatorio_geral()
-
-        serializer = self.get_serializer(funcionario)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class RelatorioGeralViewSet(viewsets.ModelViewSet):
     queryset = RelatorioGeral.objects.all()
@@ -32,29 +21,28 @@ class RelatorioGeralViewSet(viewsets.ModelViewSet):
     ordering_fields = '__all__'
     ordering = '-id'
 
-    def atualizar_relatorio_geral(self):
-        funcionarios = Funcionario.objects.all()
-        total_alertas = sum(f.total_alertas for f in funcionarios)
-        total_funcionarios = funcionarios.count()
+    @action(detail=False, methods=['post'])
+    def atualizar_total_alertas(self, request):
+        total_funcionarios = Funcionario.objects.all().count()
 
-        if total_funcionarios > 0:
-            media_alerta = total_alertas / total_funcionarios
-        else:
-            media_alerta = 0
+        total_alertas_funcionarios = Funcionario.objects.all().aggregate(Sum('total_alertas'))['total_alertas__sum'] or 0
 
-        # Atualiza ou cria um único registro do Relatório Geral
-        relatorio, created = RelatorioGeral.objects.get_or_create(
-            id=1,  # Supondo que há um único relatório
-            defaults={'total_alertas': total_alertas, 'media_alerta_por_funcionario': media_alerta}
-        )
+        media_alerta_por_funcionario = total_alertas_funcionarios / total_funcionarios
 
-        # Se já existir, apenas atualiza os valores
-        if not created:
-            relatorio.total_alertas = total_alertas
-            relatorio.media_alerta_por_funcionario = media_alerta
-            relatorio.save()
+        porcentagem_funcionario = (media_alerta_por_funcionario / total_alertas_funcionarios * 100)
 
+        relatorio, created = RelatorioGeral.objects.get_or_create(id=1)
+        relatorio.total_alertas = total_alertas_funcionarios
+        relatorio.porcentagem_funcionario = porcentagem_funcionario
+        relatorio.media_alerta_por_funcionario = media_alerta_por_funcionario
+        relatorio.save()
 
+        ##teste no postman
+        return Response({
+            'total_alertas': relatorio.total_alertas,
+            'media_alerta_por_funcionario': relatorio.media_alerta_por_funcionario,
+            'porcentagem_funcionario': relatorio.porcentagem_funcionario
+        })
 class CameraViewSet(viewsets.ModelViewSet):
     queryset = Camera.objects.all()
     serializer_class = CameraSerializer

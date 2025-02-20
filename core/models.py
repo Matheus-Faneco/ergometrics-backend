@@ -3,8 +3,8 @@ from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.db.models.aggregates import Sum
 from django.utils import timezone
-from django.db.models import Avg
 
+# -----------FUNCIONARIO QUE ESTÁ REGISTRADO NO ERGOMETRICS-----------#
 class Funcionario(models.Model):
     nome = models.CharField(
         db_column='tx_nome',
@@ -48,25 +48,20 @@ class Funcionario(models.Model):
         verbose_name="Data de criação"
     )
 
-    def adicionar_alerta(self):
-        """Adiciona um alerta ao funcionário e atualiza o relatório geral"""
-        self.total_alertas += 1
-        self.save(update_fields=['total_alertas'])
-
-        # Atualiza o Relatório Geral automaticamente
-        RelatorioGeral.atualizar_relatorio()
-
-    def save(self, *args, **kwargs):
-        """Salva as observações baseadas na duração em segundos"""
-        self.observacoes = self.definir_observacoes()
-        super().save(*args, **kwargs)
-
+    #OBSERVAÇÕES DE ACORDO COM A DURAÇÃO DE SEGUNDOS EM MÁ POSIÇÃO
     def definir_observacoes(self):
         if self.duracao_segundos < 7200:
             return "Desempenho postural excelente."
         elif self.duracao_segundos < 14400:
             return "Desempenho postural aceitável."
         return "Alerta! Tempo excessivo em má postura."
+
+    # ------------------------------------------------------------------
+
+    #SALVAR O RETURN DAS OBSERVAÇÕES EM "observacoes"
+    def save(self, *args, **kwargs):
+        self.observacoes = self.definir_observacoes()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nome
@@ -76,8 +71,11 @@ class Funcionario(models.Model):
         verbose_name = 'Funcionário'
         verbose_name_plural = 'Funcionários'
         ordering = ['nome']
+#------------------------------------------------------------------
+#------------------------------------------------------------------
 
 
+#--------ATRIBUIÇÃO DE CAMERA A FUNCIONARIO REGISTRADO------------
 class Camera(models.Model):
     funcionario = models.ForeignKey(
         Funcionario,
@@ -97,7 +95,10 @@ class Camera(models.Model):
         verbose_name = 'Câmera'
         verbose_name_plural = 'Câmeras'
 
+#------------------------------------------------------------------
+#------------------------------------------------------------------
 
+#---------------------RELATÓRIO GERAL------------------------------
 class RelatorioGeral(models.Model):
     total_alertas = models.IntegerField(
         db_column='nr_total_alertas',
@@ -119,27 +120,17 @@ class RelatorioGeral(models.Model):
         verbose_name="Porcentagem de alerta por funcionário"
     )
 
-    @classmethod
-    def atualizar_relatorio(cls):
-        """Recalcula os valores do Relatório Geral sempre que necessário"""
-        total_alertas = Funcionario.objects.aggregate(Sum('total_alertas'))['total_alertas__sum'] or 0
-        total_funcionarios = Funcionario.objects.count()
-
-        media_alertas = total_alertas / total_funcionarios if total_funcionarios > 0 else 0
-        porcentagem_alertas = (total_alertas / (total_funcionarios * 100)) * 100 if total_funcionarios > 0 else 0
-
-        relatorio, _ = cls.objects.get_or_create(id=1)
-        relatorio.total_alertas = total_alertas
-        relatorio.media_alerta_por_funcionario = media_alertas
-        relatorio.porcentagem_funcionario = porcentagem_alertas
-        relatorio.save()
-
     class Meta:
         db_table = 'relatorio_geral'
         verbose_name = 'Relatório Geral'
         verbose_name_plural = 'Relatórios Gerais'
 
+#-------------------------------------------------------------------------------------#
+#-------------------------------------------------------------------------------------#
 
+
+#---------------FUNCIONARIO QUE TEM ACESSO AO ERGOMETRICS----------#
+#-------------------------CRIAÇÃO NO SUPERUSER---------------------#
 class UsuarioAdministrador(BaseUserManager):
     def create_user(self, password=None, **kwargs):
         funcionario = kwargs.pop('funcionario', None)
@@ -167,8 +158,10 @@ class UsuarioAdministrador(BaseUserManager):
         kwargs.setdefault('is_staff', True)
         kwargs.setdefault('is_superuser', True)
         return self.create_user(password=password, **kwargs)
+#-------------------------------------------------------------------------------------#
+#-------------------------------------------------------------------------------------#
 
-
+#---------------FUNCIONARIO QUE TEM ACESSO AO ERGOMETRICS----------#
 class Usuario(AbstractBaseUser, PermissionsMixin):
     funcionario = models.OneToOneField(
         Funcionario,
@@ -218,3 +211,5 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         db_table = 'usuario'
         verbose_name = 'Usuário'
         verbose_name_plural = 'Usuários'
+#-------------------------------------------------------------------------------------#
+#-------------------------------------------------------------------------------------#
