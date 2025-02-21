@@ -10,9 +10,20 @@ from .serializers import FuncionarioSerializer, CameraSerializer, UsuarioSeriali
 class FuncionarioViewSet(viewsets.ModelViewSet):
     queryset = Funcionario.objects.all()
     serializer_class = FuncionarioSerializer
-    filterset_class = FuncionarioFilter
-    ordering_fields = '__all__'
-    ordering = '-id'
+
+    # Modifique a função para buscar pelo campo matrícula
+    @action(detail=True, methods=['patch'])
+    def atualizar_por_matricula(self, request, matricula=None):
+        try:
+            funcionario = Funcionario.objects.get(matricula=matricula)
+            serializer = self.get_serializer(funcionario, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Funcionario.DoesNotExist:
+            return Response({"detail": "Funcionário não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 class RelatorioGeralViewSet(viewsets.ModelViewSet):

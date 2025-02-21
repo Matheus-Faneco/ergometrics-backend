@@ -128,7 +128,6 @@ class RelatorioGeral(models.Model):
 #-------------------------------------------------------------------------------------#
 #-------------------------------------------------------------------------------------#
 
-
 #---------------FUNCIONARIO QUE TEM ACESSO AO ERGOMETRICS----------#
 #-------------------------CRIAÇÃO NO SUPERUSER---------------------#
 class UsuarioAdministrador(BaseUserManager):

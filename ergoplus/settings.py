@@ -89,7 +89,7 @@ DATABASES = {
         'PORT': 5432,
         'NAME': 'ergoplus',
         'USER': 'postgres',
-        'PASSWORD': '123456',
+        'PASSWORD': '1234',
     }
 }
 
@@ -118,7 +118,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'pt-br'
 
 TIME_ZONE = 'UTC'
 
